@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>企业智能客服</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .brand {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .status {
+      margin-left: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #e7f7ef;
+      color: #047857;
+      font-size: 12px;
+    }
+
+    .chat {
+      width: min(920px, 100%);
+      flex: 1;
+      margin: 0 auto;
+      padding: 24px 16px 120px;
+    }
+
+    .message {
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width: min(680px, 86%);
+      padding: 12px 14px;
+      border-radius: 8px;
+      line-height: 1.65;
+      font-size: 15px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid #e5e7eb;
+    }
+
+    .assistant .bubble {
+      background: #ffffff;
+    }
+
+    .user .bubble {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    .composer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(244, 246, 248, 0.96);
+      border-top: 1px solid #e5e7eb;
+      padding: 14px 16px;
+    }
+
+    .composer-inner {
+      width: min(920px, 100%);
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    #messageInput {
+      flex: 1;
+      height: 44px;
+      padding: 0 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+      background: #ffffff;
+    }
+
+    #messageInput:focus {
+      border-color: #2563eb;
+    }
+
+    #sendButton {
+      width: 88px;
+      height: 44px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    #sendButton:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="brand">星河科技智能客服</div>
+      <div class="status">Railway 在线版</div>
+    </header>
+
+    <main id="chatBox" class="chat">
+      <div class="message assistant">
+        <div class="bubble">您好，我是星河科技智能客服。请问有什么可以帮您？</div>
+      </div>
+    </main>
+
+    <div class="composer">
+      <div class="composer-inner">
+        <input
+          id="messageInput"
+          type="text"
+          placeholder="请输入您的问题，例如：如何申请发票？"
+        />
+        <button id="sendButton">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const chatBox = document.querySelector("#chatBox");
+    const messageInput = document.querySelector("#messageInput");
+    const sendButton = document.querySelector("#sendButton");
+
+    function addMessage(role, content) {
+      const message = document.createElement("div");
+      message.className = `message ${role}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = content;
+
+      message.appendChild(bubble);
+      chatBox.appendChild(message);
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text) {
+        return;
+      }
+
+      addMessage("user", text);
+      messageInput.value = "";
+      sendButton.disabled = true;
+      sendButton.textContent = "等待";
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: text,
+          }),
+        });
+
+        const data = await response.json();
+        addMessage("assistant", data.answer);
+      } catch (error) {
+        addMessage("assistant", "抱歉，服务暂时不可用，请稍后再试。");
+      } finally {
+        sendButton.disabled = false;
+        sendButton.textContent = "发送";
+        messageInput.focus();
+      }
+    }
+
+    sendButton.addEventListener("click", sendMessage);
+
+    messageInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
